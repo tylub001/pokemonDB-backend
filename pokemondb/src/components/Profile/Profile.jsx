@@ -9,8 +9,8 @@ const Profile = ({
   setSelectedPokemon,
   showReleaseAllModal,
   setShowReleaseAllModal,
+  handleReleaseAll,
 }) => {
-  
   return (
     <div className="profile">
       <h1 className="profile__name">
@@ -39,7 +39,7 @@ const Profile = ({
               }`}
             >
               {favorites.map((poke, index) => {
-                if (!poke || !poke.name || !poke.sprite || !poke.description) {
+                if (!poke || !poke.name || !poke.image || !poke.description) {
                   console.warn(
                     "Skipping broken favorite at index:",
                     index,
@@ -83,7 +83,7 @@ const Profile = ({
                       )}
                       <img
                         className="pokemon__image"
-                        src={poke.sprite}
+                        src={poke.image}
                         alt={poke.name}
                       />
                     </div>
@@ -93,7 +93,7 @@ const Profile = ({
                     <button
                       className="release-button"
                       onClick={() => {
-                        setSelectedPokemon(poke.name);
+                        setSelectedPokemon(poke);
                         setShowConfirmModal(true);
                       }}
                     >
@@ -112,7 +112,7 @@ const Profile = ({
             <ConfirmModal
               isOpen={showReleaseAllModal}
               onClose={() => setShowReleaseAllModal(false)}
-              onConfirm={handleClearFavorites}
+              onConfirm={handleReleaseAll}
               message="Are you sure you want to release all your saved Pokémon?"
             />
             <p className="profile__warning">

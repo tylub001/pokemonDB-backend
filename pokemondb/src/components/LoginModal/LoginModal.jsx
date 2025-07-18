@@ -36,17 +36,7 @@ export default function LoginModal({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const match = users.find(
-      (user) => user.email === values.email && user.password === values.password
-    );
-
-    if (match) {
-      onLogin(match);
-    } else {
-      setPasswordError("Incorrect email or password");
-    }
+    onLogin({ email: values.email, password: values.password });
   };
 
   return (

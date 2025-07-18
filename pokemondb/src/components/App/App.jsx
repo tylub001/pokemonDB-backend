@@ -15,6 +15,8 @@ import { fetchPokemonStrengths } from "../../utils/api";
 import { fetchAllPokemonNames } from "../../utils/api";
 import { getPokemonData } from "../../utils/api";
 import ProtectedRoute from "../ProtectedRoute/ProtectedRoute";
+import auth from "../../utils/auth";
+import * as signup from "../../utils/signup";
 
 import "./App.css";
 
@@ -140,35 +142,6 @@ const App = () => {
     }
   }, [location.pathname]);
 
-  useEffect(() => {
-    const savedUser = JSON.parse(localStorage.getItem("currentUser"));
-    if (savedUser) {
-      setCurrentUser(savedUser);
-      setIsLoggedIn(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem("currentUser", JSON.stringify(currentUser));
-      setIsLoggedIn(true);
-    } else {
-      localStorage.removeItem("currentUser");
-      setIsLoggedIn(false);
-    }
-  }, [currentUser]);
-
-  useEffect(() => {
-    if (!currentUser) {
-      setFavorites([]);
-      return;
-    }
-
-    const favoritesKey = `${currentUser.email}_favorites`;
-    const savedFavorites = JSON.parse(localStorage.getItem(favoritesKey)) || [];
-    setFavorites(savedFavorites);
-  }, [currentUser]);
-
   const handleInputChange = (value) => {
     setSearchTerm(value);
     if (value.trim() === "") {
@@ -275,46 +248,74 @@ const App = () => {
     }
   };
 
-  const handleSavePokemon = (pokemonToSave) => {
+  const handleSavePokemon = async (pokemonToSave) => {
     if (!currentUser || !pokemonToSave?.name) return;
-
-    const key = `${currentUser.email}_favorites`;
-    const existing = JSON.parse(localStorage.getItem(key)) || [];
-
-    const alreadySaved = existing.some((p) => p.name === pokemonToSave.name);
-    if (alreadySaved) return alert("You've already saved this Pokémon!");
 
     const simplifiedData = {
       name: pokemonToSave.name,
-      sprite: pokemonToSave.sprites?.front_default || pokemonToSave.imageNormal,
+      image: pokemonToSave.sprites?.front_default || pokemonToSave.imageNormal,
       description: pokemonToSave.description || "No description available.",
-      shinySprite: pokemonToSave.sprites?.front_shiny || null,
       isLegendary: pokemonToSave.isLegendary || false,
       isMythical: pokemonToSave.isMythical || false,
     };
+    try {
+      const token = localStorage.getItem("jwt");
+      const result = await signup.addPokemonCard(simplifiedData, token);
 
-    existing.push(simplifiedData);
-    localStorage.setItem(key, JSON.stringify(existing));
-    setFavorites([...existing]);
-
-    setShowSaveModal(true);
+      const updatedCards = await signup.getMyPokemonCards(token);
+      setFavorites(updatedCards);
+      setShowSaveModal(true);
+    } catch (err) {
+      console.error("Save failed:", err);
+      alert("Failed to save Pokémon.");
+    }
   };
 
-  const handleRelease = (pokemonName) => {
-    const updatedFavorites = favorites.filter((p) => p.name !== pokemonName);
-    setFavorites(updatedFavorites);
+  useEffect(() => {
+    const token = localStorage.getItem("jwt");
+    if (!token) return;
 
-    const key = `${currentUser.email}_favorites`;
-    localStorage.setItem(key, JSON.stringify(updatedFavorites));
+    signup
+      .getMyPokemonCards(token)
+      .then((savedCards) => setFavorites(savedCards))
+      .catch((err) => console.error("Failed to load saved Pokémon:", err));
+  }, []);
+
+  const handleRelease = (cardId) => {
+    console.log("Releasing card ID:", cardId);
+    const token = localStorage.getItem("jwt");
+    signup
+      .deletePokemonCard(cardId, token)
+      .then(() => {
+        setFavorites((prev) => prev.filter((card) => card._id !== cardId));
+      })
+      .catch((err) => console.error("Failed to delete Pokémon:", err));
   };
 
-  const handleClearFavorites = () => {
-    if (!currentUser) return;
-
-    const key = `${currentUser.email}_favorites`;
-    localStorage.removeItem(key);
-    setFavorites([]);
+  const handleReleaseAll = () => {
+    const token = localStorage.getItem("jwt");
+    Promise.all(
+      favorites.map((card) => signup.deletePokemonCard(card._id, token))
+    )
+      .then(() => {
+        setFavorites([]);
+        setShowReleaseAllModal(false);
+      })
+      .catch((err) => {
+        console.error("Failed to release all Pokémon:", err);
+        alert("Something went wrong while releasing all Pokémon.");
+      });
   };
+
+  useEffect(() => {
+    const token = localStorage.getItem("jwt");
+    if (!token) return;
+
+    signup
+      .getMyPokemonCards(token)
+      .then((result) => setFavorites(result))
+      .catch((err) => console.error("Failed to fetch saved Pokémon:", err));
+  }, []);
 
   const suggestionRef = useRef(null);
   useEffect(() => {
@@ -334,55 +335,77 @@ const App = () => {
   }, [setSuggestions]);
 
   const navigate = useNavigate();
-
   const handleLogin = ({ email, password }) => {
-    const normalizedEmail = email.trim().toLowerCase();
-    const users = JSON.parse(localStorage.getItem("users")) || [];
+    auth
+      .login({ email, password })
+      .then((data) => {
+        localStorage.setItem("jwt", data.token);
+        setIsLoggedIn(true);
+        fetchUserProfile(data.token);
 
-    const match = users.find(
-      (user) =>
-        user.email.trim().toLowerCase() === normalizedEmail &&
-        user.password === password
-    );
-    if (match) {
-      setCurrentUser(match);
-      console.log("Login successful!");
-      navigate("/profile");
-      closeAllModals();
-    } else {
-      alert("Incorrect email or password.");
-    }
+        signup
+          .getMyPokemonCards(data.token)
+          .then((savedCards) => setFavorites(savedCards))
+          .catch((err) => console.error("Failed to load Pokémon:", err));
+
+        setPasswordError("");
+        closeAllModals();
+        navigate("/profile");
+      })
+      .catch((err) => {
+        console.error("Login failed:", err);
+        setPasswordError("Incorrect password");
+      });
   };
 
-  const handleRegister = ({ name, email, password }) => {
-    const normalizedEmail = email.trim().toLowerCase();
-    const newUser = { name, email: normalizedEmail, password };
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const duplicate = users.find(
-      (user) => user.email.trim().toLowerCase() === normalizedEmail
-    );
+  const fetchUserProfile = (token) => {
+    signup
+      .getUserInfo(token)
+      .then((user) => setCurrentUser(user))
+      .catch((err) => console.error("Failed to fetch profile:", err));
+  };
 
-    if (duplicate) {
-      alert("A user with this email already exists.");
-      return;
-    }
-    users.push(newUser);
-    localStorage.setItem("users", JSON.stringify(users));
-    localStorage.setItem("user", JSON.stringify(newUser));
-    setCurrentUser(newUser);
-    setIsLoggedIn(true);
-    navigate("/profile");
-    closeAllModals();
-    resetRegisterForm();
+  useEffect(() => {
+    const token = localStorage.getItem("jwt");
+    if (!token) return;
+
+    auth
+      .checkToken(token)
+      .then((user) => {
+        setIsLoggedIn(true);
+        setCurrentUser(user);
+      })
+      .catch((err) => {
+        console.error("Token invalid or expired:", err);
+        localStorage.removeItem("jwt");
+        setIsLoggedIn(false);
+        setCurrentUser({});
+      });
+  }, []);
+
+  const handleRegister = ({ name, email, password }) => {
+    auth
+      .register({ name, email, password })
+      .then((user) => {
+        setCurrentUser(user);
+        return auth.login({ email, password });
+      })
+      .then((data) => {
+        localStorage.setItem("jwt", data.token);
+        setIsLoggedIn(true);
+        closeAllModals();
+      })
+      .catch((err) => {
+        console.error("Registration failed:", err);
+      });
   };
 
   const handleSignOut = () => {
-    setCurrentUser(null);
-    setFavorites([]);
-    localStorage.removeItem("user");
+    localStorage.removeItem("jwt");
     setIsLoggedIn(false);
+    setCurrentUser({});
+    setFavorites([]);
     navigate("/");
-    setActiveModal("");
   };
 
   const closeAllModals = () => setActiveModal("");
@@ -464,7 +487,7 @@ const App = () => {
                       setSelectedPokemon={setSelectedPokemon}
                       showReleaseAllModal={showReleaseAllModal}
                       setShowReleaseAllModal={setShowReleaseAllModal}
-                      handleClearFavorites={handleClearFavorites}
+                      handleReleaseAll={handleReleaseAll}
                     />
                   </ProtectedRoute>
                 }
@@ -499,10 +522,10 @@ const App = () => {
               isOpen={showConfirmModal}
               onClose={() => setShowConfirmModal(false)}
               onConfirm={() => {
-                handleRelease(selectedPokemon);
+                handleRelease(selectedPokemon._id);
                 setShowConfirmModal(false);
               }}
-              message={`Are you sure you want to release ${selectedPokemon}?`}
+              message={`Are you sure you want to release ${selectedPokemon?.name}?`}
             />
 
             <SaveModal
