@@ -362,14 +362,12 @@ const App = () => {
         setIsLoggedIn(true);
         setCurrentUser(user);
         loadSavedCards(token);
-      
       })
       .catch((err) => {
         console.error("Token invalid or expired:", err);
         localStorage.removeItem("jwt");
         setIsLoggedIn(false);
         setCurrentUser(null);
-     
       });
   }, []);
 
@@ -378,12 +376,14 @@ const App = () => {
       .register({ name, email, password })
       .then((user) => {
         setCurrentUser(user);
+        resetRegisterForm();
         return auth.login({ email, password });
       })
       .then((data) => {
         localStorage.setItem("jwt", data.token);
         setIsLoggedIn(true);
         closeAllModals();
+        navigate("/profile");
       })
       .catch((err) => {
         console.error("Registration failed:", err);
