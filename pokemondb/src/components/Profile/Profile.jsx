@@ -4,7 +4,6 @@ import ConfirmModal from "../ReleaseModal/ReleaseModal";
 const Profile = ({
   currentUser,
   favorites,
-  handleClearFavorites,
   setShowConfirmModal,
   setSelectedPokemon,
   showReleaseAllModal,

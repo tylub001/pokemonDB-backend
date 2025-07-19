@@ -271,16 +271,6 @@ const App = () => {
     }
   };
 
-  useEffect(() => {
-    const token = localStorage.getItem("jwt");
-    if (!token) return;
-
-    signup
-      .getMyPokemonCards(token)
-      .then((savedCards) => setFavorites(savedCards))
-      .catch((err) => console.error("Failed to load saved Pokémon:", err));
-  }, []);
-
   const handleRelease = (cardId) => {
     console.log("Releasing card ID:", cardId);
     const token = localStorage.getItem("jwt");
@@ -306,16 +296,6 @@ const App = () => {
         alert("Something went wrong while releasing all Pokémon.");
       });
   };
-
-  useEffect(() => {
-    const token = localStorage.getItem("jwt");
-    if (!token) return;
-
-    signup
-      .getMyPokemonCards(token)
-      .then((result) => setFavorites(result))
-      .catch((err) => console.error("Failed to fetch saved Pokémon:", err));
-  }, []);
 
   const suggestionRef = useRef(null);
   useEffect(() => {
@@ -365,6 +345,13 @@ const App = () => {
       .catch((err) => console.error("Failed to fetch profile:", err));
   };
 
+  const loadSavedCards = (token) => {
+    signup
+      .getMyPokemonCards(token)
+      .then((cards) => setFavorites(cards))
+      .catch((err) => console.error("Failed to load Pokémon:", err));
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("jwt");
     if (!token) return;
@@ -374,12 +361,15 @@ const App = () => {
       .then((user) => {
         setIsLoggedIn(true);
         setCurrentUser(user);
+        loadSavedCards(token);
+      
       })
       .catch((err) => {
         console.error("Token invalid or expired:", err);
         localStorage.removeItem("jwt");
         setIsLoggedIn(false);
-        setCurrentUser({});
+        setCurrentUser(null);
+     
       });
   }, []);
 
@@ -403,7 +393,7 @@ const App = () => {
   const handleSignOut = () => {
     localStorage.removeItem("jwt");
     setIsLoggedIn(false);
-    setCurrentUser({});
+    setCurrentUser(null);
     setFavorites([]);
     navigate("/");
   };
