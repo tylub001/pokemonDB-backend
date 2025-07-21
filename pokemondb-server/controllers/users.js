@@ -2,17 +2,14 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const { JWT_SECRET } = require("../utils/config");
-const {
-  UnauthorizedError,
-  BadRequestError,
-  NotFoundError,
-  ConflictError,
-} = require("../utils/errors");
-const { MESSAGES } = require("../utils/constants");
+const BadRequestError = require("../utils/BadRequestError");
+const NotFoundError = require("../utils/NotFoundError");
+const ConflictError = require("../utils/ConflictError");
+const UnauthorizedError = require("../utils/UnauthorizedError");
+const { MESSAGES } = require("../utils/errors");
 
 const login = (req, res, next) => {
   const { email, password } = req.body;
-  console.log("Login attempt:", email);
 
   if (!email || !password) {
     return next(new BadRequestError(MESSAGES.BAD_REQUEST));
@@ -20,7 +17,6 @@ const login = (req, res, next) => {
 
   return User.findUserByCredentials(email, password)
     .then((user) => {
-      console.log("Found user:", user);
       const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
         expiresIn: "7d",
       });
@@ -50,10 +46,10 @@ const createUser = async (req, res, next) => {
     const hash = await bcrypt.hash(password, 10);
     const user = await User.create({ name, email, password: hash });
 
- const userToSend = user.toObject();
+    const userToSend = user.toObject();
     delete userToSend.password;
 
-   return res.status(201).json(userToSend);
+    return res.status(201).json(userToSend);
   } catch (err) {
     if (err.code === 11000) {
       return next(new ConflictError(MESSAGES.CONFLICT));

@@ -1,12 +1,8 @@
-const PokemonCard = require("../models/pokemon"); 
-const {
-  NotFoundError,
-  ForbiddenError,
-  BadRequestError,
-} = require("../utils/errors");
-
-const { MESSAGES } = require("../utils/constants");
-
+const PokemonCard = require("../models/pokemon");
+const BadRequestError = require("../utils/BadRequestError");
+const NotFoundError = require("../utils/NotFoundError");
+const ForbiddenError = require("../utils/ForbiddenError");
+const { MESSAGES } = require("../utils/errors");
 
 const getPokemonCards = (req, res, next) => {
   PokemonCard.find({})
@@ -27,9 +23,6 @@ const getMyPokemonCards = (req, res, next) => {
 };
 
 const createPokemonCard = (req, res, next) => {
-  console.log("Save request received");
-  console.log("Request user:", req.user);
-  console.log("Request body:", req.body);
   const { name, description, image, isLegendary, isMythical } = req.body;
   const owner = req.user._id;
 
@@ -42,7 +35,6 @@ const createPokemonCard = (req, res, next) => {
     owner,
   })
     .then((card) => {
-      console.log("Saved Pokémon card:", card);
       res.status(201).json(card);
     })
     .catch((err) => {
@@ -50,15 +42,13 @@ const createPokemonCard = (req, res, next) => {
       if (err.name === "ValidationError") {
         return next(new BadRequestError(MESSAGES.BAD_REQUEST));
       }
-      next(err);
+      return next(err);
     });
 };
 
 const deletePokemonCard = (req, res, next) => {
   const { cardId } = req.params;
   const userId = req.user._id;
-
-  console.log("Received cardId param:", cardId);
 
   PokemonCard.findById(cardId)
     .orFail(() => new NotFoundError(MESSAGES.ITEM_NOT_FOUND))
@@ -78,7 +68,7 @@ const deletePokemonCard = (req, res, next) => {
       if (err.name === "CastError") {
         return next(new BadRequestError(MESSAGES.BAD_REQUEST));
       }
-      next(err);
+      return next(err);
     });
 };
 
