@@ -2,17 +2,16 @@ const express = require("express");
 const cors = require("cors");
 const { errors } = require("celebrate");
 const mongoose = require("mongoose");
-const helmet = require('helmet');
+const helmet = require("helmet");
 require("dotenv").config();
 const { MONGO_URL } = require("./utils/config");
 const mainRouter = require("./routes/index");
 const errorHandler = require("./middlewares/error-handler");
 const { requestLogger, errorLogger } = require("./middlewares/loggers");
-const limiter = require('./utils/rateLimiter');
-
+const limiter = require("./utils/rateLimiter");
 
 const app = express();
-const { PORT = 3001 } = process.env;
+const { PORT = 3002 } = process.env;
 
 mongoose
   .connect(MONGO_URL)
@@ -28,6 +27,8 @@ app.use(requestLogger);
 app.use(helmet());
 
 app.use("/", mainRouter);
+
+app.get("/ping", (req, res) => res.send("pong"));
 
 app.use(errorLogger);
 app.use(errors());
