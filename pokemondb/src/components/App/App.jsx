@@ -20,6 +20,8 @@ import * as signup from "../../utils/signup";
 
 import "./App.css";
 
+console.log(process.env.NODE_ENV)
+
 const App = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -59,6 +61,12 @@ const App = () => {
   const resetRegisterForm = () => {
     setValues({ email: "", password: "", name: "" });
   };
+
+
+
+useEffect(() => {
+  console.log("Environment:", process.env.NODE_ENV);
+}, []);
 
   const validateUserInput = ({ email, password }) => {
     const isEmailValid = email.includes("@");
