@@ -4,7 +4,16 @@ function checkResponse(res) {
   if (res.ok) {
     return res.json();
   }
-  return Promise.reject(`Error: ${res.status}`);
+  // Try to parse the error JSON and reject with backend message
+  return res
+    .json()
+    .then((errorData) => {
+      const errorMessage = errorData.message || `Error: ${res.status}`;
+      return Promise.reject(errorMessage);
+    })
+    .catch(() => {
+      return Promise.reject(`Error: ${res.status}`);
+    });
 }
 
 function request(url, options) {

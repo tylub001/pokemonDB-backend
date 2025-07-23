@@ -2,7 +2,7 @@ import { request, checkResponse } from "./signup";
 import { BACKEND_BASE_URL } from "../utils/config";
 
 export function register({ name, email, password }) {
-  return request(`${BACKEND_BASE_URL}/signup`, {
+  return request(`/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, email, password }),
@@ -10,7 +10,7 @@ export function register({ name, email, password }) {
 }
 
 export function login({ email, password }) {
-  return request(`${BACKEND_BASE_URL}/signin`, {
+  return request(`${BACKEND_BASE_URL}signin`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
