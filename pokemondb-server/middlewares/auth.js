@@ -3,6 +3,7 @@ const { JWT_SECRET } = require("../utils/config");
 const { MESSAGES } = require("../utils/errors");
 const UnauthorizedError = require("../utils/UnauthorizedError");
 
+
 module.exports = (req, res, next) => {
   const { authorization } = req.headers;
 
