@@ -1,4 +1,6 @@
 const express = require("express");
+const app = express();
+>>>>>>> 2a02ab6 (frontend chnages)
 const path = require('path');
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -12,7 +14,6 @@ const errorHandler = require("./middlewares/error-handler");
 const { requestLogger, errorLogger } = require("./middlewares/loggers");
 const limiter = require("./utils/rateLimiter");
 
-const app = express();
 const { PORT = 3002 } = process.env;
 
 mongoose
@@ -24,6 +25,7 @@ app.use(express.static(path.join(__dirname, "../pokemondb")));
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../pokemondb/index.html"));
 });
+
 app.use(
   cors({
     origin: "https://pokefinal.jumpingcrab.com",
