@@ -1,7 +1,7 @@
-import "./main.css";
 import notFoundIcon from "../../images/not-found.svg";
 import Preloader from "../Preloader/Preloader";
 import SearchForm from "../SearchForm/SearchForm";
+import "./Main.css";
 
 const Home = ({
   pokemon,

@@ -8,3 +8,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <App />
   </BrowserRouter>
 );
+
+console.log("Vite Environment:", import.meta.env.MODE);
