@@ -34,10 +34,8 @@ const Home = ({
   shouldScroll,
   setShouldScroll,
   hasMounted,
-  setHasMounted
+  setHasMounted,
 }) => {
-
-
   return (
     <main className="home">
       <div className="home__intro">
